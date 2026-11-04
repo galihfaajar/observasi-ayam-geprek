@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ResourceLog, ObservationSession } from '../types';
 import { db } from '../services/db';
+import { getSupabaseClient } from '../services/supabaseClient';
 import { Modal } from '../components/common/Modal';
 import {
   UtensilsCrossed,
@@ -93,6 +94,25 @@ export const ResourcesPage: React.FC<ResourcesPageProps> = ({
       };
 
       await db.resources.put(item);
+      // Sync ke Supabase di background
+      const client = getSupabaseClient();
+      if (client) {
+        client.from('resource_logs').upsert({
+          id: item.id,
+          session_id: item.sessionId,
+          waktu_periode: item.waktuPeriode,
+          jumlah_kasir: item.jumlahKasir,
+          jumlah_koki: item.jumlahKoki,
+          jumlah_pegawai_lain: item.jumlahPegawaiLain,
+          jumlah_kompor: item.jumlahKompor,
+          jumlah_wajan: item.jumlahWajan,
+          kapasitas_goreng: item.kapasitasGoreng,
+          fasilitas_lain: item.fasilitasLain,
+          pembagian_tugas: item.pembagianTugas
+        }).then(({ error }) => {
+          if (error) console.warn('Supabase resource sync error:', error.message);
+        });
+      }
       onRefreshResources();
       setIsModalOpen(false);
       showNotification('success', 'Data sumber daya berhasil disimpan.');
@@ -105,6 +125,12 @@ export const ResourcesPage: React.FC<ResourcesPageProps> = ({
     if (!deleteCandidate) return;
     try {
       await db.resources.delete(deleteCandidate.id);
+      const client = getSupabaseClient();
+      if (client) {
+        client.from('resource_logs').delete().eq('id', deleteCandidate.id).then(({ error }) => {
+          if (error) console.warn('Supabase delete resource error:', error.message);
+        });
+      }
       onRefreshResources();
       setDeleteCandidate(null);
       showNotification('success', 'Data sumber daya berhasil dihapus.');

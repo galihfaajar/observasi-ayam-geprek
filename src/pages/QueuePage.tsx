@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { QueueSnapshot, ObservationSession } from '../types';
 import { db } from '../services/db';
-import { pushSnapshotToSupabase } from '../services/supabaseClient';
+import { pushSnapshotToSupabase, getSupabaseClient } from '../services/supabaseClient';
 import { getCurrentTimeString } from '../utils/timeUtils';
 import { TimePickerInput } from '../components/common/TimePickerInput';
 import { Modal } from '../components/common/Modal';
@@ -92,6 +92,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
     if (!deleteCandidate) return;
     try {
       await db.snapshots.delete(deleteCandidate.id);
+      const client = getSupabaseClient();
+      if (client) {
+        client.from('queue_snapshots').delete().eq('id', deleteCandidate.id).then(({ error }) => {
+          if (error) console.warn('Supabase delete snapshot error:', error.message);
+        });
+      }
       onRefreshSnapshots();
       setDeleteCandidate(null);
       showNotification('success', 'Snapshot antrean berhasil dihapus.');

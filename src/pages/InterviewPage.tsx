@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InterviewItem, ObservationSession } from '../types';
 import { db } from '../services/db';
+import { getSupabaseClient } from '../services/supabaseClient';
 import { HelpCircle, Save, CheckCircle2, User, Plus, MessageSquare } from 'lucide-react';
 
 interface InterviewPageProps {
@@ -34,6 +35,20 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({
     if (!session) return;
     try {
       await db.interviews.bulkPut(items);
+      const client = getSupabaseClient();
+      if (client) {
+        const rows = items.map((i) => ({
+          id: i.id,
+          session_id: i.sessionId,
+          pertanyaan: i.pertanyaan,
+          jawaban: i.jawaban,
+          sumber: i.sumber,
+          keterangan: i.keterangan
+        }));
+        client.from('interview_items').upsert(rows).then(({ error }) => {
+          if (error) console.warn('Supabase interview upsert error:', error.message);
+        });
+      }
       setHasChanges(false);
       onRefreshInterviews();
       showNotification('success', 'Semua jawaban wawancara berhasil disimpan.');
@@ -54,6 +69,19 @@ export const InterviewPage: React.FC<InterviewPageProps> = ({
       keterangan: ''
     };
     await db.interviews.add(newItem);
+    const client = getSupabaseClient();
+    if (client) {
+      client.from('interview_items').upsert({
+        id: newItem.id,
+        session_id: newItem.sessionId,
+        pertanyaan: newItem.pertanyaan,
+        jawaban: newItem.jawaban,
+        sumber: newItem.sumber,
+        keterangan: newItem.keterangan
+      }).then(({ error }) => {
+        if (error) console.warn('Supabase interview add error:', error.message);
+      });
+    }
     onRefreshInterviews();
     showNotification('success', 'Pertanyaan baru ditambahkan.');
   };

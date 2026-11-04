@@ -63,6 +63,8 @@ export async function initializeDatabase(): Promise<string> {
     };
 
     await db.sessions.add(initialSession);
+    // Push initial session to Supabase if active
+    pushSessionToSupabase(initialSession);
 
     // Seed default interview questions for this session
     const interviewItems: InterviewItem[] = DEFAULT_INTERVIEW_QUESTIONS.map((q, idx) => ({

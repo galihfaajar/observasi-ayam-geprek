@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ObservationSession } from '../types';
 import { db } from '../services/db';
 import { getDayName, getTodayDateString, getCurrentTimeString } from '../utils/timeUtils';
+import { pushSessionToSupabase, getSupabaseClient } from '../services/supabaseClient';
 import {
   Building2,
   Calendar,
@@ -88,11 +89,15 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
           createdAt: new Date().toISOString()
         };
         await db.sessions.add(newSession);
+        // Sync ke Supabase di background
+        pushSessionToSupabase(newSession);
         onSessionCreated(newSession);
         setIsCreatingNew(false);
         showNotification('success', 'Sesi observasi baru berhasil dibuat.');
       } else {
         await db.sessions.put(formData);
+        // Sync ke Supabase di background
+        pushSessionToSupabase(formData);
         onSessionUpdated(formData);
         showNotification('success', 'Informasi identitas observasi berhasil disimpan.');
       }
@@ -134,6 +139,15 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
         await db.snapshots.where('sessionId').equals(id).delete();
         await db.resources.where('sessionId').equals(id).delete();
         await db.interviews.where('sessionId').equals(id).delete();
+        // Hapus juga dari Supabase di background
+        const client = getSupabaseClient();
+        if (client) {
+          client.from('observation_sessions').delete().eq('id', id);
+          client.from('order_logs').delete().eq('session_id', id);
+          client.from('queue_snapshots').delete().eq('session_id', id);
+          client.from('resource_logs').delete().eq('session_id', id);
+          client.from('interview_items').delete().eq('session_id', id);
+        }
         onSessionDeleted(id);
         showNotification('success', `Sesi "${name}" berhasil dihapus.`);
       } catch (err: any) {
