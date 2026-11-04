@@ -7,7 +7,7 @@ import {
   InterviewItem,
   NotificationState
 } from './types';
-import { db, initializeDatabase } from './services/db';
+import { db, initializeDatabase, clearAllDatabaseData } from './services/db';
 import {
   isSupabaseActive,
   syncSupabaseToLocal,
@@ -178,6 +178,15 @@ export const App: React.FC = () => {
                 }
               }}
               onSelectSession={handleSelectSession}
+              onResetAllData={async () => {
+                if (window.confirm('PERINGATAN: Apakah Anda yakin ingin mengosongkan SELURUH data observasi (identitas, pesanan, antrean, wawancara, sumber daya)? Data akan dibersihkan total menjadi kosong.')) {
+                  const newActiveId = await clearAllDatabaseData();
+                  await loadSessions();
+                  setActiveSessionId(newActiveId);
+                  await loadSessionData(newActiveId);
+                  showNotification('success', 'Seluruh data berhasil dikosongkan total.');
+                }
+              }}
               showNotification={showNotification}
             />
           )}

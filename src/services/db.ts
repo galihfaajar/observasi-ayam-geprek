@@ -47,18 +47,18 @@ export async function initializeDatabase(): Promise<string> {
 
     const initialSession: ObservationSession = {
       id: initialSessionId,
-      sessionName: 'Observasi Perdana (Makan Siang)',
-      namaUsaha: 'Ayam Geprek Kampus',
-      alamat: 'Jl. Merdeka No. 12',
+      sessionName: 'Sesi Observasi 1',
+      namaUsaha: '',
+      alamat: '',
       tanggal: today,
       hari: day,
       jamMulai: '11:00',
       jamSelesai: '14:00',
-      pengamat1: 'Ramdhan Ibrahim',
-      pengamat2: 'Arifin Basit Adnan',
-      pengamat3: 'Nadia Resfia Safitri',
-      cuacaKhusus: 'Cerah, ramai pengunjung jam istirahat makan siang',
-      catatanIzin: 'Izin diberikan oleh pemilik outlet (Bpk. Hendra)',
+      pengamat1: '',
+      pengamat2: '',
+      pengamat3: '',
+      cuacaKhusus: '',
+      catatanIzin: '',
       createdAt: new Date().toISOString()
     };
 
@@ -66,7 +66,7 @@ export async function initializeDatabase(): Promise<string> {
     // Push initial session to Supabase if active
     pushSessionToSupabase(initialSession);
 
-    // Seed default interview questions for this session
+    // Seed default interview questions for this session (blank answers)
     const interviewItems: InterviewItem[] = DEFAULT_INTERVIEW_QUESTIONS.map((q, idx) => ({
       id: `${initialSessionId}-INT-${idx + 1}`,
       sessionId: initialSessionId,
@@ -76,21 +76,6 @@ export async function initializeDatabase(): Promise<string> {
       keterangan: ''
     }));
     await db.interviews.bulkAdd(interviewItems);
-
-    // Initial Resource log
-    await db.resources.add({
-      id: `${initialSessionId}-RES-1`,
-      sessionId: initialSessionId,
-      waktuPeriode: '11:00 - 14:00',
-      jumlahKasir: 1,
-      jumlahKoki: 2,
-      jumlahPegawaiLain: 1,
-      jumlahKompor: 2,
-      jumlahWajan: 2,
-      kapasitasGoreng: 16,
-      fasilitasLain: 'Ulekan kayu & batu, wajan penggorengan deep fryer 2 unit',
-      pembagianTugas: '1 kasir merangkap kemas takeaway, 2 koki goreng & ulek geprek'
-    });
 
     localStorage.setItem('active_session_id', initialSessionId);
     return initialSessionId;
@@ -112,8 +97,34 @@ export async function initializeDatabase(): Promise<string> {
 }
 
 /**
- * Generates next sequential order ID e.g. P001, P002... for a given session
+ * Membersihkan seluruh data observasi (lokal dan Supabase) sehingga bersih total
  */
+export async function clearAllDatabaseData(): Promise<string> {
+  await db.orders.clear();
+  await db.snapshots.clear();
+  await db.resources.clear();
+  await db.interviews.clear();
+  await db.sessions.clear();
+  localStorage.removeItem('active_session_id');
+
+  // Bersihkan juga di Supabase jika ada client
+  const { getSupabaseClient } = await import('./supabaseClient');
+  const client = getSupabaseClient();
+  if (client) {
+    try {
+      await client.from('order_logs').delete().neq('id', '___none___');
+      await client.from('queue_snapshots').delete().neq('id', '___none___');
+      await client.from('resource_logs').delete().neq('id', '___none___');
+      await client.from('interview_items').delete().neq('id', '___none___');
+      await client.from('observation_sessions').delete().neq('id', '___none___');
+    } catch (e) {
+      console.warn('Supabase reset warning:', e);
+    }
+  }
+
+  // Buat sesi awal baru yang bersih
+  return await initializeDatabase();
+}
 export async function getNextOrderId(sessionId: string): Promise<string> {
   const orders = await db.orders.where('sessionId').equals(sessionId).toArray();
   const maxNum = orders.reduce((max, order) => {

@@ -25,6 +25,7 @@ interface IdentityPageProps {
   onSessionCreated: (newSession: ObservationSession) => void;
   onSessionDeleted: (id: string) => void;
   onSelectSession: (id: string) => void;
+  onResetAllData?: () => void;
   showNotification: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
@@ -35,6 +36,7 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
   onSessionCreated,
   onSessionDeleted,
   onSelectSession,
+  onResetAllData,
   showNotification
 }) => {
   const [formData, setFormData] = useState<ObservationSession>({
@@ -106,22 +108,38 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
     }
   };
 
+  const handleClearForm = () => {
+    if (window.confirm('Kosongkan semua isian form identitas ini?')) {
+      setFormData((prev) => ({
+        ...prev,
+        namaUsaha: '',
+        alamat: '',
+        pengamat1: '',
+        pengamat2: '',
+        pengamat3: '',
+        cuacaKhusus: '',
+        catatanIzin: ''
+      }));
+      showNotification('info', 'Inputan identitas dikosongkan. Klik "Perbarui Identitas" untuk menyimpan.');
+    }
+  };
+
   const startCreateNew = () => {
     const today = getTodayDateString();
     setFormData({
       id: '',
       sessionName: `Sesi ${sessions.length + 1} (${today})`,
-      namaUsaha: session?.namaUsaha || 'Ayam Geprek',
+      namaUsaha: session?.namaUsaha || '',
       alamat: session?.alamat || '',
       tanggal: today,
       hari: getDayName(today),
       jamMulai: getCurrentTimeString(false),
       jamSelesai: '15:00',
-      pengamat1: session?.pengamat1 || '',
-      pengamat2: session?.pengamat2 || '',
-      pengamat3: session?.pengamat3 || '',
+      pengamat1: '',
+      pengamat2: '',
+      pengamat3: '',
       cuacaKhusus: '',
-      catatanIzin: session?.catatanIzin || '',
+      catatanIzin: '',
       createdAt: new Date().toISOString()
     });
     setIsCreatingNew(true);
@@ -169,7 +187,18 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
             Informasi lokasi, waktu, jadwal pengamat, dan manajemen beberapa sesi pengamatan
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onResetAllData && (
+            <button
+              type="button"
+              onClick={onResetAllData}
+              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 transition"
+              title="Bersihkan total semua sesi, pesanan, dan inputan menjadi kosong"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Reset Bersih Total</span>
+            </button>
+          )}
           {!isCreatingNew && (
             <button
               type="button"
@@ -209,13 +238,22 @@ export const IdentityPage: React.FC<IdentityPageProps> = ({
               {isCreatingNew ? 'Mode: Membuat Sesi Baru' : `Mengedit Sesi: ${session?.sessionName}`}
             </span>
           </div>
-          <button
-            type="submit"
-            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition"
-          >
-            <Save className="w-4 h-4" />
-            <span>{isCreatingNew ? 'Simpan Sesi Baru' : 'Perbarui Identitas'}</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={handleClearForm}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold transition"
+            >
+              Kosongkan Inputan
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isCreatingNew ? 'Simpan Sesi Baru' : 'Perbarui Identitas'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Section 1: Informasi Sesi & Lokasi */}
