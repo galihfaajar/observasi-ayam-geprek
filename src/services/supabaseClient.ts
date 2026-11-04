@@ -94,6 +94,12 @@ export async function pushOrderToSupabase(order: OrderLog): Promise<void> {
   const client = getSupabaseClient();
   if (!client) return;
   try {
+    // Pastikan parent session sudah ada di Supabase terlebih dahulu agar foreign key tidak menolak
+    const session = await db.sessions.get(order.sessionId);
+    if (session) {
+      await pushSessionToSupabase(session);
+    }
+
     const row = {
       id: order.id,
       session_id: order.sessionId,
@@ -146,6 +152,12 @@ export async function pushSnapshotToSupabase(snapshot: QueueSnapshot): Promise<v
   const client = getSupabaseClient();
   if (!client) return;
   try {
+    // Pastikan parent session sudah ada di Supabase terlebih dahulu
+    const session = await db.sessions.get(snapshot.sessionId);
+    if (session) {
+      await pushSessionToSupabase(session);
+    }
+
     const row = {
       id: snapshot.id,
       session_id: snapshot.sessionId,
