@@ -117,7 +117,10 @@ export async function pushOrderToSupabase(order: OrderLog): Promise<void> {
       durasi_kemas: order.durasiKemas,
       total_waktu_sistem: order.totalWaktuSistem
     };
-    await client.from('order_logs').upsert(row);
+    const { error } = await client.from('order_logs').upsert(row);
+    if (error) {
+      console.error('Supabase order upsert failed:', error.message, error);
+    }
   } catch (err) {
     console.warn('Background sync order to Supabase failed:', err);
   }
@@ -152,7 +155,10 @@ export async function pushSnapshotToSupabase(snapshot: QueueSnapshot): Promise<v
       jumlah_meja_terisi: snapshot.jumlahMejaTerisi,
       kondisi: snapshot.kondisi
     };
-    await client.from('queue_snapshots').upsert(row);
+    const { error } = await client.from('queue_snapshots').upsert(row);
+    if (error) {
+      console.error('Supabase snapshot upsert failed:', error.message, error);
+    }
   } catch (err) {
     console.warn('Background sync snapshot to Supabase failed:', err);
   }
@@ -180,7 +186,10 @@ export async function pushSessionToSupabase(session: ObservationSession): Promis
       cuaca_khusus: session.cuacaKhusus,
       catatan_izin: session.catatanIzin
     };
-    await client.from('observation_sessions').upsert(row);
+    const { error } = await client.from('observation_sessions').upsert(row);
+    if (error) {
+      console.error('Supabase session upsert failed:', error.message, error);
+    }
   } catch (err) {
     console.warn('Background sync session to Supabase failed:', err);
   }

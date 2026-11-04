@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { QueueSnapshot, ObservationSession } from '../types';
-import { db } from '../services/db';
-import { pushSnapshotToSupabase, getSupabaseClient } from '../services/supabaseClient';
-import { getCurrentTimeString } from '../utils/timeUtils';
-import { TimePickerInput } from '../components/common/TimePickerInput';
-import { Modal } from '../components/common/Modal';
+import React, { useState } from "react";
+import { QueueSnapshot, ObservationSession } from "../types";
+import { db } from "../services/db";
+import {
+  pushSnapshotToSupabase,
+  getSupabaseClient,
+} from "../services/supabaseClient";
+import { getCurrentTimeString } from "../utils/timeUtils";
+import { TimePickerInput } from "../components/common/TimePickerInput";
+import { Modal } from "../components/common/Modal";
 import {
   Users,
   Plus,
@@ -14,38 +17,47 @@ import {
   Edit2,
   PlusCircle,
   MinusCircle,
-  AlertCircle
-} from 'lucide-react';
-import { Line } from 'react-chartjs-2';
+  AlertCircle,
+} from "lucide-react";
+import { Line } from "react-chartjs-2";
 
 interface QueuePageProps {
   session: ObservationSession | null;
   snapshots: QueueSnapshot[];
   onRefreshSnapshots: () => void;
-  showNotification: (type: 'success' | 'error' | 'info', message: string) => void;
+  showNotification: (
+    type: "success" | "error" | "info",
+    message: string,
+  ) => void;
 }
 
 export const QueuePage: React.FC<QueuePageProps> = ({
   session,
   snapshots,
   onRefreshSnapshots,
-  showNotification
+  showNotification,
 }) => {
   // Quick Log form state
-  const [waktuPengamatan, setWaktuPengamatan] = useState(getCurrentTimeString(true));
+  const [waktuPengamatan, setWaktuPengamatan] = useState(
+    getCurrentTimeString(true),
+  );
   const [jumlahMenunggu, setJumlahMenunggu] = useState(0);
   const [jumlahDilayani, setJumlahDilayani] = useState(1);
-  const [jumlahMejaTerisi, setJumlahMejaTerisi] = useState<number | ''>('');
-  const [kondisi, setKondisi] = useState('');
+  const [jumlahMejaTerisi, setJumlahMejaTerisi] = useState<number | "">("");
+  const [kondisi, setKondisi] = useState("");
 
   // Edit / Delete modal
-  const [editingSnapshot, setEditingSnapshot] = useState<QueueSnapshot | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<QueueSnapshot | null>(null);
+  const [editingSnapshot, setEditingSnapshot] = useState<QueueSnapshot | null>(
+    null,
+  );
+  const [deleteCandidate, setDeleteCandidate] = useState<QueueSnapshot | null>(
+    null,
+  );
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) {
-      showNotification('error', 'Pilih sesi observasi terlebih dahulu.');
+      showNotification("error", "Pilih sesi observasi terlebih dahulu.");
       return;
     }
 
@@ -56,20 +68,21 @@ export const QueuePage: React.FC<QueuePageProps> = ({
         waktuPengamatan: waktuPengamatan || getCurrentTimeString(true),
         jumlahMenunggu: Number(jumlahMenunggu) || 0,
         jumlahDilayani: Number(jumlahDilayani) || 0,
-        jumlahMejaTerisi: jumlahMejaTerisi === '' ? null : Number(jumlahMejaTerisi),
-        kondisi: kondisi.trim()
+        jumlahMejaTerisi:
+          jumlahMejaTerisi === "" ? null : Number(jumlahMejaTerisi),
+        kondisi: kondisi.trim(),
       };
 
       await db.snapshots.add(newSnapshot);
       pushSnapshotToSupabase(newSnapshot);
       onRefreshSnapshots();
-      showNotification('success', 'Snapshot antrean berhasil dicatat.');
+      showNotification("success", "Snapshot antrean berhasil dicatat.");
 
       // Reset form with new time
       setWaktuPengamatan(getCurrentTimeString(true));
-      setKondisi('');
+      setKondisi("");
     } catch (err: any) {
-      showNotification('error', 'Gagal mencatat snapshot: ' + err.message);
+      showNotification("error", "Gagal mencatat snapshot: " + err.message);
     }
   };
 
@@ -82,9 +95,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       pushSnapshotToSupabase(editingSnapshot);
       onRefreshSnapshots();
       setEditingSnapshot(null);
-      showNotification('success', 'Snapshot antrean berhasil diperbarui.');
+      showNotification("success", "Snapshot antrean berhasil diperbarui.");
     } catch (err: any) {
-      showNotification('error', 'Gagal memperbarui: ' + err.message);
+      showNotification("error", "Gagal memperbarui: " + err.message);
     }
   };
 
@@ -94,21 +107,26 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       await db.snapshots.delete(deleteCandidate.id);
       const client = getSupabaseClient();
       if (client) {
-        client.from('queue_snapshots').delete().eq('id', deleteCandidate.id).then(({ error }) => {
-          if (error) console.warn('Supabase delete snapshot error:', error.message);
-        });
+        client
+          .from("queue_snapshots")
+          .delete()
+          .eq("id", deleteCandidate.id)
+          .then(({ error }) => {
+            if (error)
+              console.warn("Supabase delete snapshot error:", error.message);
+          });
       }
       onRefreshSnapshots();
       setDeleteCandidate(null);
-      showNotification('success', 'Snapshot antrean berhasil dihapus.');
+      showNotification("success", "Snapshot antrean berhasil dihapus.");
     } catch (err: any) {
-      showNotification('error', 'Gagal menghapus: ' + err.message);
+      showNotification("error", "Gagal menghapus: " + err.message);
     }
   };
 
   // Sort snapshots chronological
   const sortedSnapshots = [...snapshots].sort((a, b) =>
-    a.waktuPengamatan.localeCompare(b.waktuPengamatan)
+    a.waktuPengamatan.localeCompare(b.waktuPengamatan),
   );
 
   // Line Chart
@@ -116,23 +134,23 @@ export const QueuePage: React.FC<QueuePageProps> = ({
     labels: sortedSnapshots.map((s) => s.waktuPengamatan),
     datasets: [
       {
-        label: 'Pelanggan Menunggu (Antrean)',
+        label: "Pelanggan Menunggu (Antrean)",
         data: sortedSnapshots.map((s) => s.jumlahMenunggu),
-        borderColor: '#dc2626',
-        backgroundColor: 'rgba(220, 38, 38, 0.15)',
+        borderColor: "#dc2626",
+        backgroundColor: "rgba(220, 38, 38, 0.15)",
         tension: 0.3,
         fill: true,
-        pointRadius: 4
+        pointRadius: 4,
       },
       {
-        label: 'Sedang Dilayani',
+        label: "Sedang Dilayani",
         data: sortedSnapshots.map((s) => s.jumlahDilayani),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        borderColor: "#2563eb",
+        backgroundColor: "rgba(37, 99, 235, 0.1)",
         tension: 0.3,
-        pointRadius: 4
-      }
-    ]
+        pointRadius: 4,
+      },
+    ],
   };
 
   return (
@@ -145,7 +163,8 @@ export const QueuePage: React.FC<QueuePageProps> = ({
             <span>Pencatatan Snapshot Antrean ({snapshots.length})</span>
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Snapshot berkala (setiap 5-10 menit) jumlah pelanggan menunggu dan sedang dilayani
+            Snapshot berkala (setiap 5-10 menit) jumlah pelanggan menunggu dan
+            sedang dilayani
           </p>
         </div>
       </div>
@@ -157,13 +176,20 @@ export const QueuePage: React.FC<QueuePageProps> = ({
             <Clock className="w-4 h-4 text-amber-400" />
             <span>Input Cepat Snapshot Lapangan</span>
           </span>
-          <span className="text-[11px] text-slate-300">Gunakan tombol +/- untuk menghitung cepat</span>
+          <span className="text-[11px] text-slate-300">
+            Gunakan tombol +/- untuk menghitung cepat
+          </span>
         </div>
 
-        <form onSubmit={handleQuickAdd} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-end">
+        <form
+          onSubmit={handleQuickAdd}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 items-end"
+        >
           {/* Waktu Pengamatan */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-200">Waktu Pengamatan</label>
+            <label className="block text-xs font-semibold text-slate-200">
+              Waktu Pengamatan
+            </label>
             <div className="flex items-center space-x-1">
               <input
                 type="text"
@@ -186,11 +212,15 @@ export const QueuePage: React.FC<QueuePageProps> = ({
 
           {/* Jumlah Menunggu */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-rose-300">Menunggu (Antre)</label>
+            <label className="block text-xs font-semibold text-rose-300">
+              Menunggu (Antre)
+            </label>
             <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1">
               <button
                 type="button"
-                onClick={() => setJumlahMenunggu((prev) => Math.max(0, prev - 1))}
+                onClick={() =>
+                  setJumlahMenunggu((prev) => Math.max(0, prev - 1))
+                }
                 className="p-1 hover:bg-slate-700 rounded text-slate-300"
               >
                 <MinusCircle className="w-4 h-4" />
@@ -199,7 +229,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 type="number"
                 min={0}
                 value={jumlahMenunggu}
-                onChange={(e) => setJumlahMenunggu(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={(e) =>
+                  setJumlahMenunggu(Math.max(0, parseInt(e.target.value) || 0))
+                }
                 className="w-full text-center bg-transparent text-white font-bold font-mono text-base focus:outline-none"
               />
               <button
@@ -214,11 +246,15 @@ export const QueuePage: React.FC<QueuePageProps> = ({
 
           {/* Jumlah Sedang Dilayani */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-blue-300">Sedang Dilayani</label>
+            <label className="block text-xs font-semibold text-blue-300">
+              Sedang Dilayani
+            </label>
             <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1">
               <button
                 type="button"
-                onClick={() => setJumlahDilayani((prev) => Math.max(0, prev - 1))}
+                onClick={() =>
+                  setJumlahDilayani((prev) => Math.max(0, prev - 1))
+                }
                 className="p-1 hover:bg-slate-700 rounded text-slate-300"
               >
                 <MinusCircle className="w-4 h-4" />
@@ -227,7 +263,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 type="number"
                 min={0}
                 value={jumlahDilayani}
-                onChange={(e) => setJumlahDilayani(Math.max(0, parseInt(e.target.value) || 0))}
+                onChange={(e) =>
+                  setJumlahDilayani(Math.max(0, parseInt(e.target.value) || 0))
+                }
                 className="w-full text-center bg-transparent text-white font-bold font-mono text-base focus:outline-none"
               />
               <button
@@ -242,7 +280,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
 
           {/* Kondisi / Keterangan */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-200">Kondisi / Keterangan</label>
+            <label className="block text-xs font-semibold text-slate-200">
+              Kondisi / Keterangan
+            </label>
             <input
               type="text"
               placeholder="Antrean kasir padat..."
@@ -269,8 +309,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Dinamika Panjang Antrean Berdasarkan Waktu</h3>
-            <p className="text-xs text-slate-500">Pergerakan jumlah menunggu vs kapasitas pelayanan</p>
+            <h3 className="text-sm font-bold text-slate-800">
+              Dinamika Panjang Antrean Berdasarkan Waktu
+            </h3>
+            <p className="text-xs text-slate-500">
+              Pergerakan jumlah menunggu vs kapasitas pelayanan
+            </p>
           </div>
           <span className="p-2 bg-rose-50 text-rose-700 rounded-lg">
             <TrendingUp className="w-4 h-4" />
@@ -286,15 +330,17 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 scales: {
                   y: {
                     beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                  }
-                }
+                    ticks: { stepSize: 1 },
+                  },
+                },
               }}
             />
           ) : (
             <div className="text-center text-slate-400 py-12">
               <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              <p className="text-xs font-medium">Belum ada snapshot antrean untuk grafik</p>
+              <p className="text-xs font-medium">
+                Belum ada snapshot antrean untuk grafik
+              </p>
             </div>
           )}
         </div>
@@ -303,7 +349,9 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       {/* Table of Snapshots */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900">Riwayat Snapshot Antrean</h3>
+          <h3 className="text-sm font-bold text-slate-900">
+            Riwayat Snapshot Antrean
+          </h3>
           <span className="text-xs text-slate-500 font-medium">
             Total {snapshots.length} interval tercatat
           </span>
@@ -344,10 +392,16 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-500">
-                      {s.jumlahMejaTerisi !== null && s.jumlahMejaTerisi !== undefined ? `${s.jumlahMejaTerisi} meja` : '-'}
+                      {s.jumlahMejaTerisi !== null &&
+                      s.jumlahMejaTerisi !== undefined
+                        ? `${s.jumlahMejaTerisi} meja`
+                        : "-"}
                     </td>
-                    <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={s.kondisi}>
-                      {s.kondisi || '-'}
+                    <td
+                      className="py-3 px-4 text-slate-600 max-w-xs truncate"
+                      title={s.kondisi}
+                    >
+                      {s.kondisi || "-"}
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center space-x-2">
@@ -403,7 +457,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 onChange={(e) =>
                   setEditingSnapshot({
                     ...editingSnapshot,
-                    jumlahMenunggu: Number(e.target.value) || 0
+                    jumlahMenunggu: Number(e.target.value) || 0,
                   })
                 }
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 font-mono"
@@ -421,7 +475,7 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 onChange={(e) =>
                   setEditingSnapshot({
                     ...editingSnapshot,
-                    jumlahDilayani: Number(e.target.value) || 0
+                    jumlahDilayani: Number(e.target.value) || 0,
                   })
                 }
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 font-mono"
@@ -435,11 +489,12 @@ export const QueuePage: React.FC<QueuePageProps> = ({
               <input
                 type="number"
                 min={0}
-                value={editingSnapshot.jumlahMejaTerisi ?? ''}
+                value={editingSnapshot.jumlahMejaTerisi ?? ""}
                 onChange={(e) =>
                   setEditingSnapshot({
                     ...editingSnapshot,
-                    jumlahMejaTerisi: e.target.value === '' ? null : Number(e.target.value)
+                    jumlahMejaTerisi:
+                      e.target.value === "" ? null : Number(e.target.value),
                   })
                 }
                 placeholder="Kosongkan bila tidak relevan"
@@ -455,7 +510,10 @@ export const QueuePage: React.FC<QueuePageProps> = ({
                 rows={2}
                 value={editingSnapshot.kondisi}
                 onChange={(e) =>
-                  setEditingSnapshot({ ...editingSnapshot, kondisi: e.target.value })
+                  setEditingSnapshot({
+                    ...editingSnapshot,
+                    kondisi: e.target.value,
+                  })
                 }
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600"
               />
@@ -489,8 +547,11 @@ export const QueuePage: React.FC<QueuePageProps> = ({
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Yakin ingin menghapus snapshot antrean pada jam{' '}
-            <strong className="text-slate-900 font-mono">{deleteCandidate?.waktuPengamatan}</strong>?
+            Yakin ingin menghapus snapshot antrean pada jam{" "}
+            <strong className="text-slate-900 font-mono">
+              {deleteCandidate?.waktuPengamatan}
+            </strong>
+            ?
           </p>
           <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
             <button
@@ -513,4 +574,3 @@ export const QueuePage: React.FC<QueuePageProps> = ({
     </div>
   );
 };
-
